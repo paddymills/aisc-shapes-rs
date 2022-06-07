@@ -1,0 +1,4 @@
+Package         Version
+--------------- -------
+tabulate        0.8.9
+xlwings         0.27.8
