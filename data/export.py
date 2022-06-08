@@ -1,8 +1,10 @@
 
 import csv
+import os
 import xlwings
 
 from argparse import ArgumentParser
+from glob import glob
 from re import compile as regex
 from tabulate import tabulate
 
@@ -12,34 +14,49 @@ db_name = regex(r"Database v\d+.\d+")
 readme_name = regex(r"v\d+.\d+ Readme")
 
 def main():
-    readme, header, rows = get_data()
-
     ap = ArgumentParser()
-    ap.add_argument("--export", action="store_true", help="export readme PDF and database CSV")
+    ap.add_argument("--export", action="store_true", help="export database CSV")
+    ap.add_argument("--readme", action="store_true", help="export readme PDF")
     ap.add_argument("--usage", action="store_true", help="print column usage table")
+    ap.add_argument("--all", action="store_true", help="run all scripts")
     args = ap.parse_args()
+    if args.all:
+        args.export = args.readme = args.usage = True
+
+    # set working dir as crate root
+    os.chdir(
+        os.path.abspath( os.path.join( os.path.dirname(__file__), os.pardir ) )
+    )
+
+    header, rows = get_data(export_readme=args.readme)
 
     # export if no args given
     if args.export or not any(vars(args).values()):
-        export(readme, header, rows)
+        export(header, rows)
     if args.usage:
         col_usage(header, rows)
 
 
-def get_data():
-    wb = xlwings.Book("aisc-shapes-database-v15.0.xlsx")
+def get_data(export_readme=False):
+    wb_names = glob(os.path.join("data", "aisc-shapes-database*.xls*"))
+    if len(wb_names) < 1:
+        raise Exception("Shapes database spreadsheet not found in /data")
+    wb = xlwings.Book(wb_names[0])
 
     db = None
-    readme = None
     for sheet in wb.sheets:
         if db_name.match(sheet.name):
             db = sheet
-        elif readme_name.match(sheet.name):
-            readme = sheet
 
-    assert all((db, readme)), "Readme and/or Database sheets not found. Maybe their names changed."
+        # export readme as PDF, if exists
+        elif export_readme and readme_name.match(sheet.name):
+            sheet.to_pdf(path=os.path.join("data", sheet.name + ".pdf"))
+
+    assert db is not None, "Database sheet not found. Maybe its name changed."
 
     header, *rows = sheet.range("A1").expand().value
+
+    wb.close()
 
     # replace AISC none values
     # replace non-csv encodable values (i.e. α)
@@ -48,15 +65,12 @@ def get_data():
             if col == NONE_VAL:
                 rows[r][c] = None
 
-    return readme, header, rows
+    return header, rows
 
 
-def export(readme_sheet, header, rows):
-    # export readme as PDF
-    readme_sheet.to_pdf()
-
+def export(header, rows):
     # export data as csv
-    with open("aisc-shapes-db.csv", 'w', newline='', encoding='utf-8') as csvfile:
+    with open(os.path.join("src", "aisc-shapes-db.csv"), 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(header)
         writer.writerows(rows)
