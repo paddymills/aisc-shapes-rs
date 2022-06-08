@@ -67,7 +67,8 @@ def get_data(export_readme=False):
     metric = [dict() for _ in rows]
     for c, col in enumerate(full_header):
         is_metric_col = (col in header)
-        header.append(col)
+        if not is_metric_col:
+            header.append(col)
 
         for r, row in enumerate(rows):
             val = row[c]
