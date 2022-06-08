@@ -28,13 +28,13 @@ def main():
         os.path.abspath( os.path.join( os.path.dirname(__file__), os.pardir ) )
     )
 
-    header, rows = get_data(export_readme=args.readme)
+    header, english, metric = get_data(export_readme=args.readme)
 
     # export if no args given
     if args.export or not any(vars(args).values()):
-        export(header, rows)
+        export(header, english, metric)
     if args.usage:
-        col_usage(header, rows)
+        col_usage(english)
 
 
 def get_data(export_readme=False):
@@ -54,29 +54,55 @@ def get_data(export_readme=False):
 
     assert db is not None, "Database sheet not found. Maybe its name changed."
 
-    header, *rows = sheet.range("A1").expand().value
+    full_header, *rows = sheet.range("A1").expand().value
 
     wb.close()
 
     # replace AISC none values
-    # replace non-csv encodable values (i.e. α)
-    for r, row in enumerate(rows):
-        for c, col in enumerate(row):
-            if col == NONE_VAL:
-                rows[r][c] = None
+    # split into english and metric data sets
+    header = list()
+    english = [dict() for _ in rows]
+    metric = [dict() for _ in rows]
+    for c, col in enumerate(full_header):
+        is_metric_col = (col in header)
+        header.append(col)
 
-    return header, rows
+        for r, row in enumerate(rows):
+            val = row[c]
+            if val == NONE_VAL:
+                val = None
+
+            # metric columns (second occurence)
+            #   only update metric data set
+            # english columns (first occurence)
+            #   store in both data sets in case column exists once
+            metric[r][col] = val
+            if not is_metric_col:
+                english[r][col] = val
+
+    # for r, row in enumerate(rows):
+    #     for c, col in enumerate(row):
+    #         if col == NONE_VAL:
+    #             rows[r][c] = None
+
+    return header, english, metric
 
 
-def export(header, rows):
+def export(header, english, metric):
+    
+    def export_file(rows, name):
+        with open(os.path.join("src", name), 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=header)
+            writer.writeheader()
+            writer.writerows(rows)
+
     # export data as csv
-    with open(os.path.join("src", "aisc-shapes-db.csv"), 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(header)
-        writer.writerows(rows)
+    export_file(english, "aisc-shapes-db-english.csv")
+    export_file(metric,  "aisc-shapes-db-metric.csv")
 
 
-def col_usage(header, rows):
+def col_usage(rows):
+    SHAPE_GROUP_COL = "Type"
     ALL_CHAR = '*'
     SOME_CHAR = 'o'
 
@@ -85,18 +111,14 @@ def col_usage(header, rows):
     print("\t{}: some".format(SOME_CHAR))
     print("")
 
-    shapes = sorted(set(r[0] for r in rows))
+    shapes = sorted(set(r[SHAPE_GROUP_COL] for r in rows))
     matrix = [['', *shapes]]
-    for c, col in enumerate(header[3:], start=3):
-        # stop if starting metric section
-        if col == 'EDI_Std_Nomenclature':
-            break
-
+    for col in rows[0]:
         # add new row for column
         matrix.append([col, *[None] * len(shapes)])
 
         for s, shape in enumerate(shapes, start=1):
-            has_val = [r[c] is not None for r in rows if r[0] == shape]
+            has_val = [r[col] is not None for r in rows if r[SHAPE_GROUP_COL] == shape]
             if all(has_val):
                 matrix[-1][s] = ALL_CHAR
             elif any(has_val):
