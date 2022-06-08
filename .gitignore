@@ -10,5 +10,6 @@ Cargo.lock
 # open excel files
 data/~*
 
-# readme pdf
+# temporary dev exports
 data/*.pdf
+data/usage.txt

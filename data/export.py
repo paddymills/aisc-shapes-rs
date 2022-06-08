@@ -13,6 +13,8 @@ NONE_VAL = "–"
 db_name = regex(r"Database v\d+.\d+")
 readme_name = regex(r"v\d+.\d+ Readme")
 
+utf_kwargs = dict(newline='', encoding='utf-8')
+
 def main():
     ap = ArgumentParser()
     ap.add_argument("--export", action="store_true", help="export database CSV")
@@ -91,7 +93,7 @@ def get_data(export_readme=False):
 def export(header, english, metric):
     
     def export_file(rows, name):
-        with open(os.path.join("src", name), 'w', newline='', encoding='utf-8') as csvfile:
+        with open(os.path.join("src", name), 'w', **utf_kwargs) as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=header)
             writer.writeheader()
             writer.writerows(rows)
@@ -139,7 +141,11 @@ def col_usage(rows):
         tablefmt="psql",
         colalign=("right", *["center"] * (len(shapes) + 1))
     )
-    print(tabulate(matrix, **table_args))
+    table = tabulate(matrix, **table_args)
+    print(table)
+
+    with open(os.path.join("data", "usage.txt"), "w", **utf_kwargs) as usagefile:
+        usagefile.write(table)
 
 
 if __name__ == '__main__':
