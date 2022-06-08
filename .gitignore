@@ -9,3 +9,6 @@ Cargo.lock
 
 # open excel files
 data/~*
+
+# readme pdf
+data/*.pdf
