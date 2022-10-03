@@ -11,5 +11,5 @@ Cargo.lock
 data/~*
 
 # temporary dev exports
-data/*.pdf
-data/usage.txt
+# data/*.pdf
+# data/usage.txt
