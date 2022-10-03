@@ -6,7 +6,22 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn new() -> i32 {
-        1i32
+    pub fn new() -> Self {
+        Self {
+            shape: "W".into(),
+            edi_nomenclature: "W12X64".into(),
+            aisc_label: "W12X64".into()
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_design() {
+        let result = Shape::new();
+        assert_eq!(&result.shape, "W");
     }
 }
