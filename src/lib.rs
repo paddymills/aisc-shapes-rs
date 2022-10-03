@@ -1,7 +1,7 @@
 
 
 pub mod units {
-    // stolen from: https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=4ee51938ace195537df24613b3c54564
+    // see https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=4ee51938ace195537df24613b3c54564
     use std::sync::atomic::{AtomicBool, Ordering};
 
     static METRIC: AtomicBool = AtomicBool::new(false);
@@ -22,21 +22,21 @@ mod shape;
 pub use shape::Shape;
 
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    #[cfg(feature="design")]
-    fn new_design() {
-        let result = Shape::new();
-        assert_eq!(result, 1);
-    }
+//     #[test]
+//     #[cfg(feature="design")]
+//     fn new_design() {
+//         let result = Shape::new();
+//         assert_eq!(result, 1);
+//     }
     
-    #[test]
-    #[cfg(not(feature="design"))]
-    fn new_design() {
-        let result = Shape::new();
-        assert_eq!(result, 2);
-    }
-}
+//     #[test]
+//     #[cfg(not(feature="design"))]
+//     fn new_design() {
+//         let result = Shape::new();
+//         assert_eq!(result, 2);
+//     }
+// }
